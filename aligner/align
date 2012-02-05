@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import optparse
+import sys
+
+optparser = optparse.OptionParser()
+optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
+optparser.add_option("-e", "--english", dest="english", default="e", help="Suffix of English filename (default=e)")
+optparser.add_option("-f", "--french", dest="french", default="f", help="Suffix of French filename (default=f)")
+optparser.add_option("-t", "--threshold", dest="threshold", default=0.5, type="float", help="Threshold for aligning with Dice's coefficient (default=0.5)")
+optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxint, type="int", help="Number of sentences to use for training and alignment")
+(opts, args) = optparser.parse_args()
+f_data = "%s.%s" % (opts.train, opts.french)
+e_data = "%s.%s" % (opts.train, opts.english)
+
+sys.stderr.write("Training with Dice's coefficient...")
+f_count = {}
+e_count = {}
+fe_count = {}
+for (n, (f, e)) in enumerate(zip(open(f_data), open(e_data))[0:opts.num_sents]):
+  for f_i in list(set(f.strip().split())):
+    f_count.setdefault(f_i,0) 
+    f_count[f_i] += 1
+    for e_j in list(set(e.strip().split())):
+      fe_count.setdefault((f_i,e_j),0)
+      fe_count[(f_i,e_j)] += 1
+  for e_j in list(set(e.strip().split())):
+    e_count.setdefault(e_j,0)
+    e_count[e_j] += 1
+  if n % 500 == 0:
+    sys.stderr.write(".")
+
+dice = {}
+for (k, (f_i, e_j)) in enumerate(fe_count.keys()):
+  dice[(f_i,e_j)] = 2.0 * fe_count[(f_i, e_j)] / (f_count[f_i] + e_count[e_j])
+  if k % 5000 == 0:
+    sys.stderr.write(".")
+print >> sys.stderr
+
+for (f, e) in zip(open(f_data), open(e_data))[0:opts.num_sents]:
+  for (i, f_i) in enumerate(f.strip().split()): 
+    for (j, e_j) in enumerate(e.strip().split()):
+      if (f_i,e_j) in dice and dice[(f_i,e_j)] >= opts.threshold:
+        sys.stdout.write("%i-%i " % (i,j))
+  sys.stdout.write("\n")

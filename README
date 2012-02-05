@@ -1,0 +1,10 @@
+Welcome to DREAMT:
+Decoding, Reranking, Evaluation, and Alignment for Machine Translation
+
+DREAMT will consist of four baseline components.
+1) The ALIGNER takes parallel texts and produces word alignments.
+2) The DECODER takes source sentences and produce output translations.
+3) The RERANKER takes output translations and produces a new ranking of them.
+4) The EVALUATOR takes output translations and scores them against references.
+
+At the moment, the only thing that's here is the aligner. 
