@@ -4,6 +4,10 @@ import sys
 from collections import defaultdict
 
 
+from memorymonitor import MemoryMonitor
+
+memory_mon = MemoryMonitor('madmaze')
+startMemory = memory_mon.usage()
 
 optparser = optparse.OptionParser()
 optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
@@ -68,28 +72,38 @@ def writeOutput(x):
 	  outfile.write("\n")
 	outfile.close()
 	return
+print "Memory increased by", int(memory_mon.usage()) - startMemory
 
 for (n, (f, e)) in enumerate(bitext):
 	if n%1000==0:
 		print "loading...",n
 	for f_i in set(f):
-	    f_total[f_i] = 0.0
-	    for e_j in set(e):
-	      ef_count[(e_j,f_i)] = 0.0
-	      t_ef[(e_j,f_i)]=1.0
-	      dict_eng[e_j]=0
-	      dict_fr[f_i]=0
+		f_total[f_i] = 0.0
+		dict_fr[f_i]=0
+		for e_j in set(e):
+			ef_count[(e_j,f_i)] = 0.0
+			t_ef[(e_j,f_i)]=1.0
+			dict_eng[e_j]=0
+	
 x=0
-
+print "Memory increased by", int(memory_mon.usage()) - startMemory
+'''
 #oldt_ef=t_ef.copy()
 for f_i in dict_fr:
 		for e_j in dict_eng:
 			oldtef.append(1)
+'''
+for (f, e) in bitext:
+		for f_i in set(f): 
+			for e_j in set(e):
+				oldtef.append(1)
+				
+print "Memory increased by", int(memory_mon.usage()) - startMemory
 
 print "len tef",len(t_ef)
 print "len oldtef",len(oldtef)
 
-while 0.000001< compT_EF(oldtef, t_ef, x):
+while 0.0000001< compT_EF(oldtef, t_ef, x):
 	for (n, (f, e)) in enumerate(bitext):
 		for e_j in set(e):
 			se_total[e_j]=0.0
@@ -106,15 +120,30 @@ while 0.000001< compT_EF(oldtef, t_ef, x):
 	print len(dict_eng)
 	y=0
 	print len(dict_fr)
+				
+	membefor = int(memory_mon.usage())
+	
+	for (f, e) in bitext:
+		for f_i in set(f): 
+			for e_j in set(e):
+				t_ef[(e_j,f_i)]=ef_count[(e_j,f_i)]/f_total[f_i]
+	   
+	'''   
 	for f_i in dict_fr:
 		for e_j in dict_eng:
 			#print f_i
+			# fix memusage
+			
+			#if (ef_count[(e_j,f_i)]/f_total[f_i]) >0:
 			t_ef[(e_j,f_i)]=ef_count[(e_j,f_i)]/f_total[f_i]
+				
 			#print t_ef[(e_j,f_i)], ef_count[(e_j,f_i)]/f_total[f_i]
 			
 		#exit()
 		y+=1
 		#print y, f_i
+	'''			
+	print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 			
 	x+=1
 	print "here:", x
