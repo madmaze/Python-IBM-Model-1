@@ -2,36 +2,73 @@
 import optparse
 import sys
 from collections import defaultdict
-
-
 from memorymonitor import MemoryMonitor
 
 memory_mon = MemoryMonitor('madmaze')
 startMemory = memory_mon.usage()
 
-optparser = optparse.OptionParser()
-optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
-optparser.add_option("-e", "--english", dest="english", default="e", help="Suffix of English filename (default=e)")
-optparser.add_option("-f", "--french", dest="french", default="f", help="Suffix of French filename (default=f)")
-optparser.add_option("-t", "--threshold", dest="threshold", default=0.5, type="float", help="Threshold for aligning with Dice's coefficient (default=0.5)")
-optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxint, type="int", help="Number of sentences to use for training and alignment")
-(opts, _) = optparser.parse_args()
-f_data = "%s.%s" % (opts.train, opts.french)
-e_data = "%s.%s" % (opts.train, opts.english)
+def train():
+	
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (n, (f, e)) in enumerate(bitext):
+		if n%1000==0:
+			print "loading...",n
+		for f_i in set(f):
+			f_total[f_i] = 0.0
+			dict_fr[f_i]=0
+			for e_j in set(e):
+				ef_count[(e_j,f_i)] = 0.0
+				t_ef[(e_j,f_i)]=1.0
+				dict_eng[e_j]=0
+		
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (f, e) in bitext:
+			for f_i in set(f): 
+				for e_j in set(e):
+					oldtef.append(1)
+					
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	print "len tef",len(t_ef)
+	print "len oldtef",len(oldtef)
+	
+	while 0.001< compT_EF(oldtef, t_ef, x):
+		for (n, (f, e)) in enumerate(bitext):
+			for e_j in set(e):
+				se_total[e_j]=0.0
+				for f_i in set(f):
+					se_total[e_j]+=t_ef[(e_j,f_i)]
+				for f_i in set(f):
+					ef_count[(e_j,f_i)]+=(t_ef[(e_j,f_i)]/se_total[e_j])
+					f_total[f_i]+=(t_ef[(e_j,f_i)]/se_total[e_j])
+					#print f_i, f_total[f_i], t_ef[(f_i,e_j)], se_total[e_j],(t_ef[(f_i,e_j)]/se_total[e_j])
+				#exit()
+		print "before dict", x	
+		print len(dict_eng)
+		y=0
+		print len(dict_fr)
+					
+		membefor = int(memory_mon.usage())
+		
+		for (f, e) in bitext:
+			for f_i in set(f): 
+				for e_j in set(e):
+					t_ef[(e_j,f_i)]=ef_count[(e_j,f_i)]/f_total[f_i]
+			
+		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
+				
+		x+=1
+		print "here:", x
+		print len(t_ef)
+		if x%10==0:
+			writeOutput('inter-'+str(x))
+			
+	writeOutput('final-'+str(x))
 
-#sys.stderr.write("Training with Dice's coefficient...")
-bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
-se_total = defaultdict(float)
-f_total = defaultdict(float)
-ef_count = defaultdict(float)
-t_ef = defaultdict(float)
-
-dict_eng=defaultdict(int)
-dict_fr=defaultdict(int)
-x=0
-#print "thresh:", opts.threshold
-#print "num:",  opts.num_sents
-oldtef=[]
 def compT_EF(t1, t2, x):
 	# compute convergence only every 5 itr
 	if x == 0:
@@ -61,7 +98,7 @@ def compT_EF(t1, t2, x):
 def writeOutput(x):
 	global bitext
 	global t_ef
-	outfile = open('m1.1.'+x+'.a','w') 
+	outfile = open(opts.out+'.1.'+x+'.a','w') 
 	print "printing to file..."
 	for (f, e) in bitext:
 	  for (i, f_i) in enumerate(f): 
@@ -73,63 +110,29 @@ def writeOutput(x):
 	  outfile.write("\n")
 	outfile.close()
 	return
+
+if __name__ == "__main__":
+	optparser = optparse.OptionParser()
 	
-print "Memory increased by", int(memory_mon.usage()) - startMemory
-
-for (n, (f, e)) in enumerate(bitext):
-	if n%1000==0:
-		print "loading...",n
-	for f_i in set(f):
-		f_total[f_i] = 0.0
-		dict_fr[f_i]=0
-		for e_j in set(e):
-			ef_count[(e_j,f_i)] = 0.0
-			t_ef[(e_j,f_i)]=1.0
-			dict_eng[e_j]=0
+	optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
+	optparser.add_option("-e", "--english", dest="english", default="e", help="Suffix of English filename (default=e)")
+	optparser.add_option("-o", "--out", dest="out", default="m1.", help="output prefid (default=m1.)")
+	optparser.add_option("-f", "--french", dest="french", default="f", help="Suffix of French filename (default=f)")
+	optparser.add_option("-t", "--threshold", dest="threshold", default=0.5, type="float", help="Threshold for aligning with Dice's coefficient (default=0.5)")
+	optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxint, type="int", help="Number of sentences to use for training and alignment")
+	(opts, _) = optparser.parse_args()
 	
-x=0
-print "Memory increased by", int(memory_mon.usage()) - startMemory
-
-for (f, e) in bitext:
-		for f_i in set(f): 
-			for e_j in set(e):
-				oldtef.append(1)
-				
-print "Memory increased by", int(memory_mon.usage()) - startMemory
-
-print "len tef",len(t_ef)
-print "len oldtef",len(oldtef)
-
-while 0.0000001< compT_EF(oldtef, t_ef, x):
-	for (n, (f, e)) in enumerate(bitext):
-		for e_j in set(e):
-			se_total[e_j]=0.0
-			for f_i in set(f):
-				se_total[e_j]+=t_ef[(e_j,f_i)]
-			for f_i in set(f):
-				ef_count[(e_j,f_i)]+=(t_ef[(e_j,f_i)]/se_total[e_j])
-				f_total[f_i]+=(t_ef[(e_j,f_i)]/se_total[e_j])
-				#print f_i, f_total[f_i], t_ef[(f_i,e_j)], se_total[e_j],(t_ef[(f_i,e_j)]/se_total[e_j])
-			#exit()
-	print "before dict", x	
-	print len(dict_eng)
-	y=0
-	print len(dict_fr)
-				
-	membefor = int(memory_mon.usage())
+	f_data = "%s.%s" % (opts.train, opts.french)
+	e_data = "%s.%s" % (opts.train, opts.english)
+	bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
+	se_total = defaultdict(float)
+	f_total = defaultdict(float)
+	ef_count = defaultdict(float)
+	t_ef = defaultdict(float)
 	
-	for (f, e) in bitext:
-		for f_i in set(f): 
-			for e_j in set(e):
-				t_ef[(e_j,f_i)]=ef_count[(e_j,f_i)]/f_total[f_i]
-		
-	print "Memory DELTA>>", int(memory_mon.usage()) - membefor
-			
-	x+=1
-	print "here:", x
-	print len(t_ef)
-	if x%10==0:
-		writeOutput('inter-'+str(x))
-
+	dict_eng=defaultdict(int)
+	dict_fr=defaultdict(int)
+	oldtef=[]
 	
-writeOutput('final-'+str(x))
+	
+	train()
