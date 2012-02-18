@@ -3,6 +3,8 @@ import optparse
 import sys
 from collections import defaultdict
 
+
+
 optparser = optparse.OptionParser()
 optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
 optparser.add_option("-e", "--english", dest="english", default="e", help="Suffix of English filename (default=e)")
@@ -13,11 +15,151 @@ optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxi
 f_data = "%s.%s" % (opts.train, opts.french)
 e_data = "%s.%s" % (opts.train, opts.english)
 
-sys.stderr.write("Training with Dice's coefficient...")
+#sys.stderr.write("Training with Dice's coefficient...")
 bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
-f_count = defaultdict(int)
-e_count = defaultdict(int)
-fe_count = defaultdict(int)
+se_total = defaultdict(float)
+f_total = defaultdict(float)
+ef_count = defaultdict(float)
+t_ef = defaultdict(float)
+
+dict_eng=defaultdict(float)
+dict_fr=defaultdict(float)
+x=0
+print "thresh:", opts.threshold
+print "num:",  opts.num_sents
+oldtef=[]
+def compT_EF(t1, t2, x):
+	if x == 0:
+		return 1
+	global oldtef
+	global t_ef
+	tot=0.0
+	cnt=0
+	c2=0
+	print "len tef",len(t_ef)
+	print "len oldtef",len(oldtef)
+	for s in t_ef:
+		if t_ef[s] > 0:
+			if c2<5:
+				print s, c2, oldtef[cnt], t_ef[s], oldtef[cnt]-t_ef[s]
+			tot+=abs(oldtef[cnt]-t_ef[s])
+			c2+=1
+		cnt+=1
+		
+	print "conv?:", tot/c2
+	
+	oldtef=[]
+	for e in t_ef:
+		oldtef.append(t_ef[e])
+	return (tot/c2)
+	
+def writeOutput(x):
+	global bitext
+	global t_ef
+	outfile = open('m1.'+x+'.a','w') 
+	print "printing to file..."
+	for (f, e) in bitext:
+	  for (i, f_i) in enumerate(f): 
+	    for (j, e_j) in enumerate(e):
+	      if t_ef[(e_j,f_i)] >= opts.threshold:
+		#sys.stdout.write("%i-%i " % (i,j))
+		outfile.write("%i-%i " % (i,j))
+	  #sys.stdout.write("\n")
+	  outfile.write("\n")
+	outfile.close()
+	return
+
+for (n, (f, e)) in enumerate(bitext):
+	if n%1000==0:
+		print "loading...",x
+	for f_i in set(f):
+	    f_total[f_i] = 0.0
+	    for e_j in set(e):
+	      ef_count[(e_j,f_i)] = 0.0
+	      t_ef[(e_j,f_i)]=1.0
+	      dict_eng[e_j]=0.0
+	      dict_fr[f_i]=0.0
+x=0
+
+#oldt_ef=t_ef.copy()
+for f_i in dict_fr:
+		for e_j in dict_eng:
+			oldtef.append(1)
+
+print "len tef",len(t_ef)
+print "len oldtef",len(oldtef)
+
+while 0.0000001 < compT_EF(oldtef, t_ef, x):
+	for (n, (f, e)) in enumerate(bitext):
+		for e_j in set(e):
+			se_total[e_j]=0.0
+			for f_i in set(f):
+				se_total[e_j]+=t_ef[(e_j,f_i)]
+			#print e_j, se_total[e_j] 
+		for e_j in set(e):
+			for f_i in set(f):
+				ef_count[(e_j,f_i)]+=(t_ef[(e_j,f_i)]/se_total[e_j])
+				f_total[f_i]+=(t_ef[(e_j,f_i)]/se_total[e_j])
+				#print f_i, f_total[f_i], t_ef[(f_i,e_j)], se_total[e_j],(t_ef[(f_i,e_j)]/se_total[e_j])
+			#exit()
+	print "before dict", x	
+	print len(dict_eng)
+	y=0
+	print len(dict_fr)
+	for f_i in dict_fr:
+		for e_j in dict_eng:
+			#print f_i
+			t_ef[(e_j,f_i)]=ef_count[(e_j,f_i)]/f_total[f_i]
+			#print t_ef[(e_j,f_i)], ef_count[(e_j,f_i)]/f_total[f_i]
+			
+		#exit()
+		y+=1
+		#print y, f_i
+			
+	x+=1
+	print "here:", x
+	print len(t_ef)
+	if x%2==0:
+		writeOutput('inter-'+str(x))
+		'''
+		print "printing to file..."
+		outfile = open('m1.inter-'+str(x)+'.a','w') 
+		for (f, e) in bitext:
+			for (i, f_i) in enumerate(f):
+				for (j, e_j) in enumerate(e):
+					if t_ef[(e_j,f_i)] > .05:
+						x=x
+					#if t_ef[(f_i,e_j)] >= opts.threshold:
+					#	x=x
+					#	#outfile.write("%i-%i " % (i,j))
+					#	#outfile.write("\n")
+						
+		outfile.close()
+		print "done with snapshot"
+		'''
+	'''if x%2==0:
+		outfile = open('m1.inter-'+str(x)+'.a','w') 
+		print "printing to file..."
+		for (f, e) in bitext:
+		  for (i, f_i) in enumerate(f): 
+		    for (j, e_j) in enumerate(e):
+		      if t_ef[(f_i,e_j)] >= opts.threshold:
+			#sys.stdout.write("%i-%i " % (i,j))
+			outfile.write("%i-%i " % (i,j))
+		  #sys.stdout.write("\n")
+		  outfile.write("\n")
+		outfile.close()
+		print "done with snapshot"
+	'''
+	#compT_EF(oldtef, t_ef)
+	
+writeOutput('final-'+str(x))
+
+
+
+
+#print bitext
+'''
 for (n, (f, e)) in enumerate(bitext):
   for f_i in set(f):
     f_count[f_i] += 1
@@ -41,3 +183,4 @@ for (f, e) in bitext:
       if dice[(f_i,e_j)] >= opts.threshold:
         sys.stdout.write("%i-%i " % (i,j))
   sys.stdout.write("\n")
+  '''
