@@ -12,9 +12,16 @@ total_d = defaultdict(float)
 total = defaultdict(float)
 count = defaultdict(float)
 a = defaultdict(float)
+se_total = defaultdict(float)
+f_total = defaultdict(float)
+ef_count = defaultdict(float)
 t_ef = defaultdict(float)
 
-def train():
+#dict_eng=defaultdict(int)
+#dict_fr=defaultdict(int)
+oldtef=[]
+
+def train2():
 	global bitext
 	global sf_total
 	global d_counts
@@ -25,8 +32,8 @@ def train():
 	global total
 	x=0
 	
-	while x < 10:
-		compT_EF(x)
+	while x < 1000:
+		#compT_EF2(x)
 		print "Memory increased by", int(memory_mon.usage()) - startMemory
 		for (n, (f, e)) in enumerate(bitext):
 			l_e=len(e)
@@ -42,6 +49,7 @@ def train():
 					d_counts[(e_n,f_n,l_e,l_f)] += c
 					total[(e_j)] += c
 					total_d[(f_n,l_e,l_f)] += c
+		print "off to smooth.."
 		laplaceSmoothing()
 		for (f_i, e_j) in set(count):
 			t_ef[(f_i,e_j)] = count[(f_i,e_j)]/total[(e_j)]
@@ -49,8 +57,71 @@ def train():
 			a[(e_n,f_n,l_f,l_e)] = d_counts[(i,j,I,J)]/total_d[(j,I,J)]
 		
 		print "iter:", x
+		if x%10==0:
+			writeOutput('inter-m2-'+str(x))
 		x+=1
-	writeOutput('final-'+str(x))
+	writeOutput('final-m2-'+str(x))
+
+def train1():
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (n, (f, e)) in enumerate(bitext):
+		if n%1000==0:
+			print "loading...",n
+		for f_i in set(f):
+			f_total[f_i] = 0.0
+			#dict_fr[f_i]=0
+			for e_j in set(e):
+				ef_count[(e_j,f_i)] = 0.0
+				t_ef[(f_i,e_j)]=1.0
+				#dict_eng[e_j]=0
+		
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (f, e) in bitext:
+			for f_i in set(f): 
+				for e_j in set(e):
+					oldtef.append(1)
+					
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	print "len tef",len(t_ef)
+	print "len oldtef",len(oldtef)
+	
+	while 0.00001< compT_EF1(oldtef, t_ef, x):
+		for (n, (f, e)) in enumerate(bitext):
+			for e_j in set(e):
+				se_total[e_j]=0.0
+				for f_i in set(f):
+					se_total[e_j]+=t_ef[(f_i,e_j)]
+				for f_i in set(f):
+					ef_count[(e_j,f_i)]+=(t_ef[(f_i,e_j)]/se_total[e_j])
+					f_total[f_i]+=(t_ef[(f_i,e_j)]/se_total[e_j])
+					#print f_i, f_total[f_i], t_ef[(f_i,e_j)], se_total[e_j],(t_ef[(f_i,e_j)]/se_total[e_j])
+				#exit()
+		print "before dict", x	
+		#print len(dict_eng)
+		y=0
+		#print len(dict_fr)
+					
+		membefor = int(memory_mon.usage())
+		
+		for (f, e) in bitext:
+			for f_i in set(f): 
+				for e_j in set(e):
+					t_ef[(f_i,e_j)]=ef_count[(e_j,f_i)]/f_total[f_i]
+			
+		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
+				
+		x+=1
+		print "here:", x
+		print len(t_ef)
+		if x%10==0:
+			writeOutput('inter-'+str(x))
+			
+	
 	
 
 def laplaceSmoothing():
@@ -81,7 +152,7 @@ def initThings():
 		for (f_n, (f_i)) in enumerate(f):
 			for (e_n, (e_j)) in enumerate(e):
 				a[(e_n,f_n,l_f,l_e)]=u
-				t_ef[(f_i,e_j)]=1
+				#t_ef[(f_i,e_j)]=1
 				oldtef.append(1)
 	
 	'''
@@ -103,7 +174,33 @@ def initThings():
 	'''
 	print "end init"
 
-def compT_EF(x):
+def compT_EF2(x):
+	# compute convergence only every 5 itr
+	if x == 0:
+		return 1
+	global oldtef
+	global t_ef
+	tot=0.0
+	cnt=0
+	c2=0
+	print "len tef",len(t_ef)
+	print "len oldtef",len(oldtef)
+	for s in t_ef:
+		if t_ef[s] > 0:
+			if c2<5:
+				print s, c2, oldtef[cnt], t_ef[s], oldtef[cnt]-t_ef[s]
+			tot+=abs(oldtef[cnt]-t_ef[s])
+			c2+=1
+		cnt+=1
+		
+	print "conv?:", tot/c2
+	
+	oldtef=[]
+	for e in t_ef:
+		oldtef.append(t_ef[e])
+	return (tot/c2)
+
+def compT_EF1(t1, t2, x):
 	# compute convergence only every 5 itr
 	if x == 0:
 		return 1
@@ -132,14 +229,18 @@ def compT_EF(x):
 def writeOutput(x):
 	global bitext
 	global t_ef
-	outfile = open(opts.out+'.1.'+x+'.a','w') 
+	outfile = open(opts.out+'.o.'+x+'.a','w')
+	outfile2 = open(opts.out+'.tef.'+x+'.a','w') 
 	print "printing to file..."
 	for (f, e) in bitext:
 	  for (i, f_i) in enumerate(f): 
 	    for (j, e_j) in enumerate(e):
+	      s=str((f_i,e_j)) +" "+ str(t_ef[(f_i,e_j)]) +"\n"
+	      #print s
+	      outfile2.write(s)
 	      if t_ef[(f_i,e_j)] >= opts.threshold:
 		#sys.stdout.write("%i-%i " % (i,j))
-		print (f_i,e_j), t_ef[(f_i,e_j)]
+		#print (f_i,e_j), t_ef[(f_i,e_j)]
 		outfile.write("%i-%i " % (i,j))
 	  #sys.stdout.write("\n")
 	  outfile.write("\n")
@@ -164,4 +265,7 @@ if __name__ == "__main__":
 	
 	initThings()
 	
-	train()
+	train1()
+	train2()
+
+	
