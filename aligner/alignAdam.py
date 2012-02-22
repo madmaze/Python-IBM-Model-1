@@ -12,7 +12,6 @@ memory_mon = MemoryMonitor('madmaze')
 startMemory = memory_mon.usage()
 
 def trainfw(itr):
-	
 	x=0
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
 	
@@ -68,10 +67,6 @@ def trainfw(itr):
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
-		print "here:", x
-		print len(t_ef)
-		#if x%2==0:
-		#if x<=20 and x>=15:
 		writeOutput('inter-'+str(x))
 			
 	writeOutput('final-'+str(x))
@@ -110,17 +105,35 @@ def writeOutput(x):
 	print "printing to file..."
 	for (f, e) in bitext:
 	  for (i, f_i) in enumerate(f): 
-	  	  best_p=0
-	  	  best_j=0
-		  for (j, e_j) in enumerate(e):
-		      #if t_ef[(e_j,f_i)] >= opts.threshold:
-		      if t_ef[(e_j,f_i)] > best_p:
-		      	      best_p=t_ef[(e_j,f_i)]
-		      	      best_j=j
-	          outfile.write("%i-%i " % (i,best_j))
+	    for (j, e_j) in enumerate(e):
+	      if t_ef[(e_j,f_i)] >= opts.threshold:
+		#sys.stdout.write("%i-%i " % (i,j))
+		outfile.write("%i-%i " % (i,j))
+	  #sys.stdout.write("\n")
 	  outfile.write("\n")
 	outfile.close()
 	return
+
+def MaxLikelyEst():
+	global bitext
+	global fe_count
+	global e_count
+	global p_fe
+	for (n, (f, e)) in enumerate(bitext):
+		for f_i in f:
+			for e_j in e:
+				fe_count[(f_i,e_j)] += 1
+				e_count[(e_j] += 1
+	for (f,e) in fe_count:
+		p_fe[(f,e)] = fe_count[(f,e)]/e_count[e]
+def ExpMax(MaxItr):
+	k=0
+	#initialize 0?
+	while k < MaxItr:
+		
+def doThings():
+	MaxLikelyEst()
+	ExpMax()
 
 if __name__ == "__main__":
 	optparser = optparse.OptionParser()
@@ -139,6 +152,12 @@ if __name__ == "__main__":
 	#se_total = defaultdict(float)
 	f_total = defaultdict(float)
 	ef_count = defaultdict(float)
+	
+	#reversing
+	e_total = defaultdict(float)
+	fe_count = defaultdict(float)
+	
+	#global probs
 	t_ef = defaultdict(float)
 	
 	dict_eng=defaultdict(int)
@@ -146,5 +165,4 @@ if __name__ == "__main__":
 	oldtef=[]
 	
 	
-	trainfw(30)
-	#trainbw(30)
+	doThings()

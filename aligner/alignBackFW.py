@@ -24,7 +24,7 @@ def trainfw(itr):
 
 			for e_j in set(e):
 				ef_count[(e_j,f_i)] = 0.0
-				t_ef[(e_j,f_i)]=1.0
+				#t_ef[(e_j,f_i)]=1.0
 
 		
 	x=0
@@ -68,14 +68,69 @@ def trainfw(itr):
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
-		print "here:", x
-		print len(t_ef)
-		#if x%2==0:
-		#if x<=20 and x>=15:
 		writeOutput('inter-'+str(x))
 			
 	writeOutput('final-'+str(x))
 
+def trainbw(itr):
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (n, (f, e)) in enumerate(bitext):
+		if n%1000==0:
+			print "loading...",n
+		for e_j in set(e):
+			e_total[e_j] = 0.0
+
+			for f_i in set(f):
+				fe_count[(f_i,e_j)] = 0.0
+				#t_ef[(e_j,f_i)]=1.0
+
+		
+	x=0
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	for (f, e) in bitext:
+			for f_i in set(f): 
+				for e_j in set(e):
+					oldtef.append(1.0)
+					
+	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	
+	print "len tef",len(t_ef)
+	print "len oldtef",len(oldtef)
+	
+	while 0.00001< compT_EF(oldtef, t_ef, x) and x!=itr:
+		for e in set(e_total):
+			e_total[e]=0.0
+		for (f,e) in set(fe_count):
+			fe_count[(f,e)]=0.0
+			
+		for (f,e) in bitext:
+			for f_i in set(f):
+				se_total=0.0
+				for e_j in set(e):
+					se_total += t_ef[(e_j,f_i)]  * len(f)
+				for e_j in set(e):
+					fe_count[(f_i,e_j)] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
+					e_total[e_j] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
+
+		print "before dict", x	
+		#print len(dict_eng)
+		y=0
+					
+		membefor = int(memory_mon.usage())
+
+		for e_j,f_i in set(t_ef):
+			t_ef[(e_j,f_i)] = fe_count[(f_i,e_j)]/e_total[e_j]
+		
+		
+		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
+				
+		x+=1
+		writeOutput('inter-'+str(x))
+			
+	writeOutput('final-'+str(x))
 
 def compT_EF(t1, t2, x):
 	# compute convergence only every 5 itr
@@ -139,12 +194,23 @@ if __name__ == "__main__":
 	#se_total = defaultdict(float)
 	f_total = defaultdict(float)
 	ef_count = defaultdict(float)
+	
+	#reversing
+	e_total = defaultdict(float)
+	fe_count = defaultdict(float)
+	
+	#global probs
 	t_ef = defaultdict(float)
 	
 	dict_eng=defaultdict(int)
 	dict_fr=defaultdict(int)
 	oldtef=[]
+	for (n, (f, e)) in enumerate(bitext):
+		for e_j in set(e):
+			for f_i in set(f):
+				t_ef[(e_j,f_i)]=1.0
 	
 	
-	trainfw(30)
-	#trainbw(30)
+	#trainfw(10)
+	trainbw(10)
+	trainfw(10)

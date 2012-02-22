@@ -83,24 +83,6 @@ def initThings():
 				a[(e_n,f_n,l_f,l_e)]=u
 				t_ef[(f_i,e_j)]=1
 				oldtef.append(1)
-	
-	'''
-	me_len=0
-	mf_len=0
-	for (n, (f, e)) in enumerate(bitext):
-		l_e=len(e)
-		l_f=len(f)
-		if(l_e>me_len):
-			me_len=l_e
-		if(l_f>mf_len):
-			mf_len=l_f
-	for I in range(1, me_len+2):
-		u=1.0/I
-		for J in range(1, mf_len+1):
-			for j in range(1,J+1):
-				for i in range(1,I+1):
-					a[(i,j,I,J)]=u
-	'''
 	print "end init"
 
 def compT_EF(x):
@@ -136,12 +118,14 @@ def writeOutput(x):
 	print "printing to file..."
 	for (f, e) in bitext:
 	  for (i, f_i) in enumerate(f): 
-	    for (j, e_j) in enumerate(e):
-	      if t_ef[(f_i,e_j)] >= opts.threshold:
-		#sys.stdout.write("%i-%i " % (i,j))
-		print (f_i,e_j), t_ef[(f_i,e_j)]
-		outfile.write("%i-%i " % (i,j))
-	  #sys.stdout.write("\n")
+	  	  best_p=0
+	  	  best_j=0
+		  for (j, e_j) in enumerate(e):
+		      #if t_ef[(e_j,f_i)] >= opts.threshold:
+		      if t_ef[(f_i,e_j)] > best_p:
+		      	      best_p=t_ef[(f_i,e_j)]
+		      	      best_j=j
+	          outfile.write("%i-%i " % (i,best_j))
 	  outfile.write("\n")
 	outfile.close()
 	return

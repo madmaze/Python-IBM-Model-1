@@ -56,13 +56,12 @@ def train2():
 		for (i,j,I,J) in set(d_counts):
 			a[(e_n,f_n,l_f,l_e)] = d_counts[(i,j,I,J)]/total_d[(j,I,J)]
 		
-		print "iter:", x
-		if x%10==0:
-			writeOutput('inter-m2-'+str(x))
+		print "iter:", x	
+		writeOutput('inter-m2-'+str(x))
 		x+=1
-	writeOutput('final-m2-'+str(x))
 
-def train1():
+
+def train1(MaxItr):
 	x=0
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
 	
@@ -90,7 +89,7 @@ def train1():
 	print "len tef",len(t_ef)
 	print "len oldtef",len(oldtef)
 	
-	while 0.00001< compT_EF1(oldtef, t_ef, x):
+	while 0.00001< compT_EF1(oldtef, t_ef, x) and x!=MaxItr:
 		for (n, (f, e)) in enumerate(bitext):
 			for e_j in set(e):
 				se_total[e_j]=0.0
@@ -118,8 +117,7 @@ def train1():
 		x+=1
 		print "here:", x
 		print len(t_ef)
-		if x%10==0:
-			writeOutput('inter-'+str(x))
+		writeOutput('inter-'+str(x))
 			
 	
 	
@@ -155,23 +153,6 @@ def initThings():
 				#t_ef[(f_i,e_j)]=1
 				oldtef.append(1)
 	
-	'''
-	me_len=0
-	mf_len=0
-	for (n, (f, e)) in enumerate(bitext):
-		l_e=len(e)
-		l_f=len(f)
-		if(l_e>me_len):
-			me_len=l_e
-		if(l_f>mf_len):
-			mf_len=l_f
-	for I in range(1, me_len+2):
-		u=1.0/I
-		for J in range(1, mf_len+1):
-			for j in range(1,J+1):
-				for i in range(1,I+1):
-					a[(i,j,I,J)]=u
-	'''
 	print "end init"
 
 def compT_EF2(x):
@@ -229,20 +210,18 @@ def compT_EF1(t1, t2, x):
 def writeOutput(x):
 	global bitext
 	global t_ef
-	outfile = open(opts.out+'.o.'+x+'.a','w')
-	outfile2 = open(opts.out+'.tef.'+x+'.a','w') 
+	outfile = open(opts.out+'.1.'+x+'.a','w') 
 	print "printing to file..."
 	for (f, e) in bitext:
 	  for (i, f_i) in enumerate(f): 
-	    for (j, e_j) in enumerate(e):
-	      s=str((f_i,e_j)) +" "+ str(t_ef[(f_i,e_j)]) +"\n"
-	      #print s
-	      outfile2.write(s)
-	      if t_ef[(f_i,e_j)] >= opts.threshold:
-		#sys.stdout.write("%i-%i " % (i,j))
-		#print (f_i,e_j), t_ef[(f_i,e_j)]
-		outfile.write("%i-%i " % (i,j))
-	  #sys.stdout.write("\n")
+	  	  best_p=0
+	  	  best_j=0
+		  for (j, e_j) in enumerate(e):
+		      #if t_ef[(e_j,f_i)] >= opts.threshold:
+		      if t_ef[(f_i,e_j)] > best_p:
+		      	      best_p=t_ef[(f_i,e_j)]
+		      	      best_j=j
+	          outfile.write("%i-%i " % (i,best_j))
 	  outfile.write("\n")
 	outfile.close()
 	return
@@ -265,7 +244,7 @@ if __name__ == "__main__":
 	
 	initThings()
 	
-	train1()
+	train1(5)
 	train2()
 
 	
