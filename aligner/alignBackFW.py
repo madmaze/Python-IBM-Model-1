@@ -11,7 +11,7 @@ from memorymonitor import MemoryMonitor
 memory_mon = MemoryMonitor('madmaze')
 startMemory = memory_mon.usage()
 
-def trainfw(itr):
+def trainfw(itr, q):
 	
 	x=0
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
@@ -19,10 +19,10 @@ def trainfw(itr):
 	for (n, (f, e)) in enumerate(bitext):
 		if n%1000==0:
 			print "loading...",n
-		for f_i in set(f):
+		for f_i in f:
 			f_total[f_i] = 0.0
 
-			for e_j in set(e):
+			for e_j in e:
 				ef_count[(e_j,f_i)] = 0.0
 				#t_ef[(e_j,f_i)]=1.0
 
@@ -31,8 +31,8 @@ def trainfw(itr):
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
 	
 	for (f, e) in bitext:
-			for f_i in set(f): 
-				for e_j in set(e):
+			for f_i in f: 
+				for e_j in e:
 					oldtef.append(1.0)
 					
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
@@ -41,17 +41,17 @@ def trainfw(itr):
 	print "len oldtef",len(oldtef)
 	
 	while 0.00001< compT_EF(oldtef, t_ef, x) and x!=itr:
-		for f in set(f_total):
+		for f in f_total:
 			f_total[f]=0.0
-		for (e,f) in set(ef_count):
+		for (e,f) in ef_count:
 			ef_count[(e,f)]=0.0
 			
 		for (f,e) in bitext:
-			for e_j in set(e):
+			for e_j in e:
 				se_total=0.0
-				for f_i in set(f):
+				for f_i in f:
 					se_total += t_ef[(e_j,f_i)]  * len(e)
-				for f_i in set(f):
+				for f_i in f:
 					ef_count[(e_j,f_i)] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 					f_total[f_i] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 
@@ -61,38 +61,38 @@ def trainfw(itr):
 					
 		membefor = int(memory_mon.usage())
 
-		for e_j,f_i in set(t_ef):
+		for e_j,f_i in t_ef:
 			t_ef[(e_j,f_i)] = ef_count[(e_j,f_i)]/f_total[f_i]
 		
 		
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
-		writeOutput('inter-'+str(x))
+		writeOutput('interfw-'+str(q)+"-"+str(x))
 			
-	writeOutput('final-'+str(x))
+	writeOutput('finalfw-'+str(q)+"-"+str(x))
 
-def trainbw(itr):
+def trainbw(itr, q):
 	x=0
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
 	
 	for (n, (f, e)) in enumerate(bitext):
 		if n%1000==0:
 			print "loading...",n
-		for e_j in set(e):
+		for e_j in e:
 			e_total[e_j] = 0.0
 
-			for f_i in set(f):
+			for f_i in f:
 				fe_count[(f_i,e_j)] = 0.0
 				#t_ef[(e_j,f_i)]=1.0
 
-		
+	
 	x=0
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
 	
 	for (f, e) in bitext:
-			for f_i in set(f): 
-				for e_j in set(e):
+			for f_i in f: 
+				for e_j in e:
 					oldtef.append(1.0)
 					
 	print "Memory increased by", int(memory_mon.usage()) - startMemory
@@ -101,17 +101,17 @@ def trainbw(itr):
 	print "len oldtef",len(oldtef)
 	
 	while 0.00001< compT_EF(oldtef, t_ef, x) and x!=itr:
-		for e in set(e_total):
+		for e in e_total:
 			e_total[e]=0.0
-		for (f,e) in set(fe_count):
+		for (f,e) in fe_count:
 			fe_count[(f,e)]=0.0
 			
 		for (f,e) in bitext:
-			for f_i in set(f):
+			for f_i in f:
 				se_total=0.0
-				for e_j in set(e):
+				for e_j in e:
 					se_total += t_ef[(e_j,f_i)]  * len(f)
-				for e_j in set(e):
+				for e_j in e:
 					fe_count[(f_i,e_j)] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 					e_total[e_j] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 
@@ -121,16 +121,16 @@ def trainbw(itr):
 					
 		membefor = int(memory_mon.usage())
 
-		for e_j,f_i in set(t_ef):
+		for e_j,f_i in t_ef:
 			t_ef[(e_j,f_i)] = fe_count[(f_i,e_j)]/e_total[e_j]
 		
 		
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
-		writeOutput('inter-'+str(x))
+		writeOutput('interbw-'+str(q)+"-"+str(x))
 			
-	writeOutput('final-'+str(x))
+	writeOutput('finalbw-'+str(q)+"-"+str(x))
 
 def compT_EF(t1, t2, x):
 	# compute convergence only every 5 itr
@@ -164,15 +164,15 @@ def writeOutput(x):
 	outfile = open(opts.out+'.1.'+x+'.a','w') 
 	print "printing to file..."
 	for (f, e) in bitext:
-	  for (i, f_i) in enumerate(f): 
+	  for (j, e_j) in enumerate(e): 
 	  	  best_p=0
-	  	  best_j=0
-		  for (j, e_j) in enumerate(e):
+	  	  best_i=0
+		  for (i, f_i) in enumerate(f):
 		      #if t_ef[(e_j,f_i)] >= opts.threshold:
 		      if t_ef[(e_j,f_i)] > best_p:
 		      	      best_p=t_ef[(e_j,f_i)]
-		      	      best_j=j
-	          outfile.write("%i-%i " % (i,best_j))
+		      	      best_i=i
+	          outfile.write("%i-%i " % (best_i,j))
 	  outfile.write("\n")
 	outfile.close()
 	return
@@ -206,11 +206,16 @@ if __name__ == "__main__":
 	dict_fr=defaultdict(int)
 	oldtef=[]
 	for (n, (f, e)) in enumerate(bitext):
-		for e_j in set(e):
-			for f_i in set(f):
+		for e_j in e:
+			for f_i in f:
 				t_ef[(e_j,f_i)]=1.0
 	
 	
-	#trainfw(10)
-	trainbw(10)
-	trainfw(10)
+	#trainfw(16,1)
+	#trainbw(60,1)
+	for n in range(0,20):
+		trainfw(2,n)
+		trainbw(2,n)
+	
+				
+	#trainbw(20)
