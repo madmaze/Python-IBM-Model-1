@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Resources:
 #http://www-rohan.sdsu.edu/~gawron/mt_plus/mt/course_core/lectures/assignment_five.pdf
 #http://www.cs.jhu.edu/~alopez/papers/model1-note.pdf
 #http://www.inf.ed.ac.uk/teaching/courses/mt/assignments/assignment2.pdf
@@ -8,39 +9,28 @@ import sys
 from collections import defaultdict
 from memorymonitor import MemoryMonitor
 
+#checking size in memory
 memory_mon = MemoryMonitor('madmaze')
 startMemory = memory_mon.usage()
 
-def trainfw(itr, q):
-	
+def trainfw(itr, q):		
 	x=0
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	print "Process size:", int(memory_mon.usage()) - startMemory
 	
-	for (n, (f, e)) in enumerate(bitext):
-		if n%1000==0:
-			print "loading...",n
-		for f_i in f:
-			f_total[f_i] = 0.0
-
-			for e_j in e:
-				ef_count[(e_j,f_i)] = 0.0
-				#t_ef[(e_j,f_i)]=1.0
-
-		
-	x=0
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
-	
+	# Initialize probablility set of last iteration to 1
+	#    * for tracking convergence
 	for (f, e) in bitext:
 			for f_i in f: 
 				for e_j in e:
 					oldtef.append(1.0)
 					
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	print "Process size:", int(memory_mon.usage()) - startMemory
 	
-	print "len tef",len(t_ef)
-	print "len oldtef",len(oldtef)
+	#print "len tef",len(t_ef)
+	#print "len oldtef",len(oldtef)
 	
 	while 0.00001< compT_EF(oldtef, t_ef, x) and x!=itr:
+		# zero totals and counts for this iteration
 		for f in f_total:
 			f_total[f]=0.0
 		for (e,f) in ef_count:
@@ -56,11 +46,10 @@ def trainfw(itr, q):
 					f_total[f_i] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 
 		print "before dict", x	
-		#print len(dict_eng)
-		y=0
 					
 		membefor = int(memory_mon.usage())
 
+		# calculate new probablilities
 		for e_j,f_i in t_ef:
 			t_ef[(e_j,f_i)] = ef_count[(e_j,f_i)]/f_total[f_i]
 		
@@ -68,39 +57,30 @@ def trainfw(itr, q):
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
+		# write output for the current iteration
 		writeOutput('interfw-'+str(q)+"-"+str(x))
-			
+	
+	# write output for the current set of iterations
 	writeOutput('finalfw-'+str(q)+"-"+str(x))
 
 def trainbw(itr, q):
 	x=0
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	print "Process size:", int(memory_mon.usage()) - startMemory
 	
-	for (n, (f, e)) in enumerate(bitext):
-		if n%1000==0:
-			print "loading...",n
-		for e_j in e:
-			e_total[e_j] = 0.0
-
-			for f_i in f:
-				fe_count[(f_i,e_j)] = 0.0
-				#t_ef[(e_j,f_i)]=1.0
-
-	
-	x=0
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
-	
+	# Initialize probablility set of last iteration to 1
+	#    * for tracking convergence
 	for (f, e) in bitext:
 			for f_i in f: 
 				for e_j in e:
 					oldtef.append(1.0)
 					
-	print "Memory increased by", int(memory_mon.usage()) - startMemory
+	print "Process size:", int(memory_mon.usage()) - startMemory
 	
-	print "len tef",len(t_ef)
-	print "len oldtef",len(oldtef)
+	#print "len tef",len(t_ef)
+	#print "len oldtef",len(oldtef)
 	
 	while 0.00001< compT_EF(oldtef, t_ef, x) and x!=itr:
+		# zero totals and counts for this iteration
 		for e in e_total:
 			e_total[e]=0.0
 		for (f,e) in fe_count:
@@ -116,11 +96,10 @@ def trainbw(itr, q):
 					e_total[e_j] += (t_ef[(e_j,f_i)] * len(e) * len(f))/se_total
 
 		print "before dict", x	
-		#print len(dict_eng)
-		y=0
 					
 		membefor = int(memory_mon.usage())
 
+		# calculate new probablilities
 		for e_j,f_i in t_ef:
 			t_ef[(e_j,f_i)] = fe_count[(f_i,e_j)]/e_total[e_j]
 		
@@ -128,12 +107,14 @@ def trainbw(itr, q):
 		print "Memory DELTA>>", int(memory_mon.usage()) - membefor
 				
 		x+=1
+		# write output for the current iteration
 		writeOutput('interbw-'+str(q)+"-"+str(x))
-			
+	
+	# write output for the current set of iterations
 	writeOutput('finalbw-'+str(q)+"-"+str(x))
 
 def compT_EF(t1, t2, x):
-	# compute convergence only every 5 itr
+	# compute convergence ie prev set of probs(oldtef) vs current tef
 	if x == 0:
 		return 1
 	global oldtef
@@ -168,7 +149,6 @@ def writeOutput(x):
 	  	  best_p=0
 	  	  best_i=0
 		  for (i, f_i) in enumerate(f):
-		      #if t_ef[(e_j,f_i)] >= opts.threshold:
 		      if t_ef[(e_j,f_i)] > best_p:
 		      	      best_p=t_ef[(e_j,f_i)]
 		      	      best_i=i
@@ -202,20 +182,17 @@ if __name__ == "__main__":
 	#global probs
 	t_ef = defaultdict(float)
 	
-	dict_eng=defaultdict(int)
-	dict_fr=defaultdict(int)
 	oldtef=[]
+	
+	# uniformly initialize all probablilities
 	for (n, (f, e)) in enumerate(bitext):
 		for e_j in e:
 			for f_i in f:
 				t_ef[(e_j,f_i)]=1.0
 	
 	
-	#trainfw(16,1)
-	#trainbw(60,1)
-	for n in range(0,20):
-		trainfw(2,n)
-		trainbw(2,n)
-	
-				
-	#trainbw(20)
+	trainfw(1,1)
+	trainbw(1,1)
+	#for n in range(0,20):
+	#	trainfw(2,n)
+	#	trainbw(2,n)
