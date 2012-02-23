@@ -1,0 +1,15 @@
+for (( i=1; i <= 20; i++ ))
+do
+    #for (( j=1; j <= 1; j++ ))
+    #do
+          X=`./grade < fwbw20.1.interfw-$i-1.a | tail -n 1`
+          echo fw$i-1 $X
+          X=`./grade < fwbw20.1.finalfw-$i-2.a | tail -n 1`
+	  echo fw$i-2 $X
+          X=`./grade < fwbw20.1.interbw-$i-1.a | tail -n 1`
+          echo bw$i-1 $X
+          X=`./grade < fwbw20.1.finalbw-$i-2.a | tail -n 1`
+          echo bw$i-2 $X
+
+    #done
+done
