@@ -1,0 +1,38 @@
+<HTML>
+<link href="default.css" rel="stylesheet" type="text/css" />
+<H1>Assignment 1 Code:</H1>
+<h3>Matthias Lee & Michael Weinberger</h3><br>
+<table border=0px width=800px>
+<tr><td>
+The final implementation of our version of model 1 can be found in <b>alignBackFW.py</b> this python script includes 2 versions of the algrithm, one translating from English to French and one from French to English.
+These 2 versions are used in combination to extract more data out of the supplied corpus/bitext.<br>
+Our best combination(first iteration convergence was achieved) of forward(E given F) and backwards(F given E) is 13 iterations of 1 itr forward and 1 itr backward.<br><br>
+We had run into 2 main snags along the way:
+<ul>
+<li> We had missed the part about implementing the decoding where we need to print out the file. The version with this flaw interestingly gave us the same answer as the one with the correct mapping if run for enough iteration ~2000</li><br>
+<li> The other issue was that we called python's set() instead of iterating over every element in the list, it removed duplicates. This decreased the acuracy of our results by roughly 10 AER</li>
+</ul>
+<H2>Code arrangement:</H2>
+<pre>
+<a href="aligner">aligner</a>
+ |-- <a href="aligner/align">align</a>
+ |-- <a href="aligner/align2">align2</a>
+ |-- <a href="aligner/align3">align3</a>
+ |-- <a href="aligner/alignAdam.py">alignAdam.py</a>
+ |-- <a href="aligner/alignBackFW.py">alignBackFW.py</a>
+ |-- <a href="aligner/align.bk">align.bk</a>
+ |-- <a href="aligner/check">check</a>
+ |-- <a href="aligner/comp.script">comp.script</a>
+ |-- <a href="aligner/data">data</a>
+ |   |-- <a href="aligner/data/hansards.a">hansards.a</a>
+ |   |-- <a href="aligner/data/hansards.e">hansards.e</a>
+ |   '-- <a href="aligner/data/hansards.f">hansards.f</a>
+ |-- <a href="aligner/grade">grade</a>
+ |-- <a href="aligner/memorymonitor.py">memorymonitor.py</a>
+ '-- <a href="aligner/README">README</a>
+</pre><br>
+A tar.gz of the code is also available here: <a href="aligner.tar.gz">aligner.tar.gz</a>
+</td>
+</tr>
+</table>
+</HTML>
